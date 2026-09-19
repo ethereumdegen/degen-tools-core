@@ -1,6 +1,6 @@
 [package]
 name = "degen-tools-core"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 rust-version = "1.91"
 description = "The engine behind degen-tools and degen-portal: metalcraft HTTP tool packages, credential resolution, secret masking, and the loopback API agents call"

@@ -151,9 +151,14 @@ pub fn execute(pkg: &Package, tool: &ToolConfig, mut args: Map<String, Value>, o
     let req = tool.prepare(&args, &pkg.integration.requires_env, &lookup, !secret_args.is_empty())?;
     // Every secret value this call sends, so an API that echoes one back
     // (an env var it just set, a token in an error message) never prints it.
-    let sensitive: Vec<String> = secret_args
-        .iter()
-        .filter_map(|(param, _)| args.get(param).and_then(Value::as_str).map(str::to_string))
+    let mut req = req;
+    // Signed once the request exists: an OAuth 1.0a credential is an HMAC over
+    // the method, URL and parameters, so it cannot be written into a package
+    // file the way a key in a header can.
+    let signed = crate::app().signer.sign(&mut req, &ctx)?;
+    let sensitive: Vec<String> = signed
+        .into_iter()
+        .chain(secret_args.iter().filter_map(|(param, _)| args.get(param).and_then(Value::as_str).map(str::to_string)))
         .chain(
             pkg.integration
                 .requires_env

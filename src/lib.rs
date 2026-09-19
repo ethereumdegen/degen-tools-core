@@ -56,6 +56,38 @@ pub struct App {
     /// A package file names one with `"method": "NATIVE"` and
     /// `"url": "native:<id>"`; see [`NativeTool`].
     pub natives: &'static [NativeTool],
+    /// Authenticates a request that a `$NAME` in a header cannot.
+    pub signer: &'static (dyn RequestSigner + Send + Sync),
+}
+
+/// Authentication that is computed from the request rather than substituted
+/// into it.
+///
+/// Most APIs take a key in a header, which a package file can write as
+/// `$NAME`. OAuth 1.0a cannot: the credential is an HMAC over the method, the
+/// URL and the sorted parameters, so it does not exist until the request
+/// does. This runs after the request is built and before it is sent.
+pub trait RequestSigner {
+    /// Add whatever authenticates this request. Returns any secret value it
+    /// put on the wire, so the runner masks it if the API echoes it back.
+    fn sign(
+        &self,
+        request: &mut tool::PreparedRequest,
+        ctx: &config::CallContext<'_>,
+    ) -> Result<Vec<String>, errors::DegenError>;
+}
+
+/// Requests carry whatever the package file gave them, and nothing else.
+pub struct NoSigning;
+
+impl RequestSigner for NoSigning {
+    fn sign(
+        &self,
+        _request: &mut tool::PreparedRequest,
+        _ctx: &config::CallContext<'_>,
+    ) -> Result<Vec<String>, errors::DegenError> {
+        Ok(Vec::new())
+    }
 }
 
 /// A tool that cannot be one HTTP request.
@@ -146,6 +178,7 @@ pub fn app() -> &'static App {
             example_tool: "example_tool",
             overview: "# degen-tools-core\n\n{packages}",
             natives: &[],
+            signer: &NoSigning,
             dir: ".degen-tools-core-test",
             env_prefix: "DEGEN_CORE",
             user_agent: "degen-tools-core/test",
