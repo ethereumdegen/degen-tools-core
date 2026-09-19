@@ -5,16 +5,20 @@ edition = "2024"
 rust-version = "1.91"
 description = "The engine behind degen-tools and degen-portal: metalcraft HTTP tool packages, credential resolution, secret masking, and the loopback API agents call"
 license = "MIT"
+repository = "https://github.com/ethereumdegen/degen-core"
+readme = "README.md"
+keywords = ["ai-agents", "api", "credentials", "tools"]
+categories = ["command-line-utilities", "development-tools"]
 publish = false
 
 [dependencies]
-serde.workspace = true
-serde_json.workspace = true
-dirs.workspace = true
-reqwest.workspace = true
-dotenvy.workspace = true
-axum.workspace = true
-tokio.workspace = true
-getrandom.workspace = true
-zip.workspace = true
-include_dir.workspace = true
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+dirs = "5"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "multipart", "rustls-tls"] }
+dotenvy = "0.15"
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio", "query"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "signal", "time"] }
+getrandom = "0.3"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+include_dir = "0.7"
