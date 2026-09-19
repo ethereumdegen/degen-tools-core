@@ -118,18 +118,18 @@ pub fn app() -> &'static App {
     #[cfg(test)]
     {
         return APP.get_or_init(|| App {
-            name: "degen-core",
+            name: "degen-tools-core",
             version: env!("CARGO_PKG_VERSION"),
             example_tool: "example_tool",
-            overview: "# degen-core\n\n{packages}",
-            dir: ".degen-core-test",
+            overview: "# degen-tools-core\n\n{packages}",
+            dir: ".degen-tools-core-test",
             env_prefix: "DEGEN_CORE",
-            user_agent: "degen-core/test",
+            user_agent: "degen-tools-core/test",
             bundled: &TEST_BUNDLED,
             policy: &AllowEveryCall,
             credentials: &config::StoredCredentials,
         });
     }
     #[cfg(not(test))]
-    APP.get().expect("degen_core::init() must be called before anything else")
+    APP.get().expect("degen_tools_core::init() must be called before anything else")
 }

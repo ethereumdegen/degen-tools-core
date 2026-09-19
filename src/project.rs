@@ -171,7 +171,7 @@ mod tests {
     use super::*;
 
     fn temp_repo(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("degen-core-project-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("degen-tools-core-project-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(dir.join("sub/deeper")).unwrap();
         let ok = Command::new("git").arg("init").arg("-q").arg(&dir).status().map(|s| s.success()).unwrap_or(false);
@@ -214,7 +214,7 @@ mod tests {
         fs::write(dir.join("sub/.env"), "A=sub\n").unwrap();
         assert_eq!(find_root(&dir.join("sub/deeper")), (dir.join("sub"), true));
         assert_eq!(find_root(&dir), (dir.clone(), true));
-        let outside = std::env::temp_dir().join(format!("degen-core-noproject-{}", std::process::id()));
+        let outside = std::env::temp_dir().join(format!("degen-tools-core-noproject-{}", std::process::id()));
         fs::create_dir_all(&outside).unwrap();
         assert_eq!(find_root(&outside), (outside.clone(), false));
         let _ = fs::remove_dir_all(&outside);

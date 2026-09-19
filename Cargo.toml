@@ -1,15 +1,14 @@
 [package]
-name = "degen-core"
+name = "degen-tools-core"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.91"
 description = "The engine behind degen-tools and degen-portal: metalcraft HTTP tool packages, credential resolution, secret masking, and the loopback API agents call"
 license = "MIT"
-repository = "https://github.com/ethereumdegen/degen-core"
+repository = "https://github.com/ethereumdegen/degen-tools-core"
 readme = "README.md"
 keywords = ["ai-agents", "api", "credentials", "tools"]
 categories = ["command-line-utilities", "development-tools"]
-publish = false
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

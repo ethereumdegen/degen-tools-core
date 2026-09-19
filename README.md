@@ -1,4 +1,4 @@
-# degen-core
+# degen-tools-core
 
 The engine two binaries share:
 [degen-tools](https://github.com/ethereumdegen/degen-tools) (devops APIs, static
@@ -32,12 +32,12 @@ means a fix lands once.
 A binary names itself once, before anything reads state:
 
 ```rust
-use degen_core::{App, AllowEveryCall, config::StoredCredentials};
+use degen_tools_core::{App, AllowEveryCall, config::StoredCredentials};
 use include_dir::{Dir, include_dir};
 
 static BUNDLED: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/packages");
 
-degen_core::init(App {
+degen_tools_core::init(App {
     name: "degen-tools",
     version: env!("CARGO_PKG_VERSION"),
     dir: ".degen-tools",              // ~/.degen-tools
