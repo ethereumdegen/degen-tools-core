@@ -52,6 +52,29 @@ pub struct App {
     /// The agent-facing overview `skill` prints with no arguments. `{packages}`
     /// and `{version}` are filled in.
     pub overview: &'static str,
+    /// Tools this binary implements in Rust rather than as one HTTP request.
+    /// A package file names one with `"method": "NATIVE"` and
+    /// `"url": "native:<id>"`; see [`NativeTool`].
+    pub natives: &'static [NativeTool],
+}
+
+/// A tool that cannot be one HTTP request.
+///
+/// Almost everything here is declarative on purpose: a package is JSON, and
+/// the same JSON runs in the agent. A few things genuinely are not one
+/// request — X's chunked upload is initialize, a call per chunk, finalize,
+/// then polling until the server finishes processing — and pretending
+/// otherwise would mean four tools an agent has to sequence correctly while
+/// holding an upload session open.
+///
+/// So the metadata still lives in the package file (name, description, JSON
+/// schema), which is what `list`, `skill`, `/v1/tools` and MCP read; only the
+/// body is Rust. The call still goes through the policy and is still recorded.
+pub struct NativeTool {
+    /// The id after `native:` in the tool file's `url`.
+    pub id: &'static str,
+    /// Run the call. The arguments are already typed against the schema.
+    pub run: fn(&serde_json::Map<String, serde_json::Value>, &config::CallContext<'_>) -> Result<serde_json::Value, errors::DegenError>,
 }
 
 /// What a call is allowed to do, decided before it is sent and recorded after.
@@ -122,6 +145,7 @@ pub fn app() -> &'static App {
             version: env!("CARGO_PKG_VERSION"),
             example_tool: "example_tool",
             overview: "# degen-tools-core\n\n{packages}",
+            natives: &[],
             dir: ".degen-tools-core-test",
             env_prefix: "DEGEN_CORE",
             user_agent: "degen-tools-core/test",

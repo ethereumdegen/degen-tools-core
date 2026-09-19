@@ -142,6 +142,12 @@ impl ToolConfig {
         Duration::from_secs(secs)
     }
 
+    /// The native handler this tool names, if it is one: `"method": "NATIVE"`
+    /// with `"url": "native:<id>"`. Everything else is one HTTP request.
+    pub fn native_handler(&self) -> Option<&str> {
+        self.method.eq_ignore_ascii_case("NATIVE").then(|| self.url.strip_prefix("native:")).flatten()
+    }
+
     /// The credentials this tool's own text names (`$NEON_API_KEY` in the URL, a
     /// header, or `body_defaults`), limited to what the package declares. The
     /// runner resolves these before substitution starts.
@@ -672,6 +678,20 @@ mod tests {
         assert_eq!(host_of("https://a@evil.example/x").as_deref(), Some("evil.example"));
         assert_eq!(host_of("https://{host}/x"), None);
         assert_eq!(host_of("https://Fal.run:443/m").as_deref(), Some("fal.run"));
+    }
+
+    #[test]
+    fn a_native_tool_is_recognised_by_its_method_and_url() {
+        let native = tool(json!({"name": "up", "method": "NATIVE", "url": "native:x_upload_video"}));
+        assert_eq!(native.native_handler(), Some("x_upload_video"));
+
+        let http = tool(json!({"name": "up", "method": "POST", "url": "https://api.example/upload"}));
+        assert_eq!(http.native_handler(), None);
+
+        // A tool that says NATIVE without naming a handler is not one; it will
+        // fail as an invalid HTTP method rather than run something arbitrary.
+        let empty = tool(json!({"name": "up", "method": "NATIVE", "url": "https://api.example/upload"}));
+        assert_eq!(empty.native_handler(), None);
     }
 
     #[test]

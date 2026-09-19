@@ -141,6 +141,13 @@ pub fn execute(pkg: &Package, tool: &ToolConfig, mut args: Map<String, Value>, o
         crate::Verdict::Hold(outcome) => return Ok(*outcome),
     }
 
+    // A tool the binary implements itself. It runs behind the same gate, is
+    // recorded the same way, and — because a package is third-party content —
+    // only a package compiled into this binary may name one.
+    if let Some(handler) = tool.native_handler() {
+        return run_native(pkg, tool, handler, &args, &ctx, started);
+    }
+
     let req = tool.prepare(&args, &pkg.integration.requires_env, &lookup, !secret_args.is_empty())?;
     // Every secret value this call sends, so an API that echoes one back
     // (an env var it just set, a token in an error message) never prints it.
@@ -259,6 +266,51 @@ pub fn execute(pkg: &Package, tool: &ToolConfig, mut args: Map<String, Value>, o
         saved.extend(save_inline(&mut data, &tool.save_inline, &tool.name, opts.out.as_deref())?);
     }
     Ok(finish(true, None, data, saved, stored_names))
+}
+
+/// Run a tool the binary implements, and report it like any other call.
+fn run_native(
+    pkg: &Package,
+    tool: &ToolConfig,
+    handler: &str,
+    args: &Map<String, Value>,
+    ctx: &crate::config::CallContext<'_>,
+    started: std::time::Instant,
+) -> Result<Outcome, DegenError> {
+    // An installed package is someone else's JSON. Letting it name a handler
+    // would let it run code this binary meant only for its own tools.
+    if !pkg.is_bundled() {
+        return Err(DegenError::InvalidPackage(format!(
+            "{} is an installed package, so it may not use the native handler '{handler}'",
+            pkg.id()
+        )));
+    }
+    let native = crate::app()
+        .natives
+        .iter()
+        .find(|n| n.id == handler)
+        .ok_or_else(|| DegenError::InvalidPackage(format!("tool '{}' wants the native handler '{handler}', which this binary does not have", tool.name)))?;
+
+    let (response, ok, error) = match (native.run)(args, ctx) {
+        Ok(response) => (response, true, None),
+        // A failure inside a multi-step tool is the tool's own failure, not a
+        // transport error: it comes back as an outcome so the caller sees how
+        // far it got.
+        Err(e) => (Value::Null, false, Some(e.to_string())),
+    };
+    let outcome = Outcome {
+        tool: tool.name.clone(),
+        package: pkg.id().to_string(),
+        ok,
+        status: if ok { 200 } else { 0 },
+        error,
+        response,
+        saved_media: Vec::new(),
+        stored_secrets: Vec::new(),
+        duration_ms: started.elapsed().as_millis(),
+    };
+    crate::app().policy.record(tool, args, ctx, &outcome);
+    Ok(outcome)
 }
 
 /// The largest file a tool call will read off disk. An upload is a file this
